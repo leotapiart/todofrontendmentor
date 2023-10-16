@@ -1,3 +1,5 @@
+import { DragDropContext } from "@hello-pangea/dnd";
+
 import { useEffect, useState } from "react";
 import TodoComputed from "./components/TodoComputed";
 import TodoCreate from "./components/TodoCreate";
@@ -5,24 +7,14 @@ import TodoFilter from "./components/TodoFilter";
 import TodoHeader from "./components/TodoHeader";
 import TodoList from "./components/TodoList";
 
-// const initialStateTodos = [
-//     {
-//         id: Date.now() + 1,
-//         title: "Complete online JavaScript course",
-//         completed: true,
-//     },
-//     { id: Date.now() + 2, title: "Jag around the park 3x", completed: false },
-//     { id: Date.now() + 3, title: "10 minutes meditation", completed: false },
-//     { id: Date.now() + 4, title: "Read for 1 hour", completed: false },
-//     { id: Date.now() + 5, title: "Pick up groceries", completed: false },
-//     {
-//         id: Date.now() + 6,
-//         title: "Complete Todo App on Fronted Mentor",
-//         completed: false,
-//     },
-// ];
-
 const initialStateTodos = JSON.parse(localStorage.getItem("todos")) || [];
+
+const reorder = (list, startIndex, endIndex) => {
+    const result = [...list];
+    const [removed] = result.splice(startIndex, 1);
+    result.splice(endIndex, 0, removed);
+    return result;
+};
 
 function App() {
     const [todos, setTodos] = useState(initialStateTodos);
@@ -55,6 +47,19 @@ function App() {
 
     const computedItemsLeft = todos.filter((todo) => !todo.completed).length;
 
+    const handleDragEnd = (result) => {
+        const { destination, source } = result;
+        if (!destination) return;
+        if (
+            source.index === destination.index &&
+            source.droppableId === destination.droppableId
+        )
+            return;
+        setTodos((prevTasks) =>
+            reorder(prevTasks, source.index, destination.index)
+        );
+    };
+
     return (
         <div
             className=" min-h-screen bg-gray-300 bg-[url('./assets/images/bg-mobile-light.jpg')]
@@ -65,12 +70,15 @@ function App() {
             <TodoHeader />
             <main className="container mx-auto mt-8 px-4 md:max-w-xl">
                 <TodoCreate createTodo={createTodo} />
-                <TodoList
-                    todos={todos}
-                    deleteTodo={deleteTodo}
-                    completedTodo={completedTodo}
-                    filter={filter}
-                />
+
+                <DragDropContext onDragEnd={handleDragEnd}>
+                    <TodoList
+                        todos={todos}
+                        deleteTodo={deleteTodo}
+                        completedTodo={completedTodo}
+                        filter={filter}
+                    />
+                </DragDropContext>
                 <TodoComputed
                     computedItemsLeft={computedItemsLeft}
                     clearCompleted={clearCompleted}
